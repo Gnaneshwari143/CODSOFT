@@ -1,0 +1,42 @@
+import React, { useState } from 'react';
+import './CallSheet.css';
+
+const CallSheet: React.FC = () => {
+  const [callSheetData, setCallSheetData] = useState({
+    date: '',
+    location: '',
+    callTime: '',
+    scenes: '',
+    cast: '',
+    crew: '',
+    notes: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setCallSheetData({ ...callSheetData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Call Sheet Generated:", callSheetData);
+    alert("Call Sheet Generated!");
+  };
+
+  return (
+    <div className="call-sheet-container">
+      <h2 className="call-sheet-title">Generate Call Sheet</h2>
+      <form onSubmit={handleSubmit} className="call-sheet-form">
+        <input type="date" name="date" value={callSheetData.date} onChange={handleChange} placeholder="Date" required />
+        <input type="text" name="location" value={callSheetData.location} onChange={handleChange} placeholder="Location" required />
+        <input type="time" name="callTime" value={callSheetData.callTime} onChange={handleChange} placeholder="Call Time" required />
+        <textarea name="scenes" value={callSheetData.scenes} onChange={handleChange} placeholder="Scenes (e.g., Scene 5, Scene 6)" required />
+        <textarea name="cast" value={callSheetData.cast} onChange={handleChange} placeholder="Cast (e.g., Actor 1 - Role)" required />
+        <textarea name="crew" value={callSheetData.crew} onChange={handleChange} placeholder="Crew (e.g., Director, AD, Cameraman)" required />
+        <textarea name="notes" value={callSheetData.notes} onChange={handleChange} placeholder="Additional Notes" />
+        <button type="submit" className="generate-button">Generate & Save</button>
+      </form>
+    </div>
+  );
+};
+
+export default CallSheet;
