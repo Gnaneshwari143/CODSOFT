@@ -1,43 +1,56 @@
-package com.example.movieapp.controller;
+package com.example.movieapp.service;
 
 import com.example.movieapp.model.ShootingSchedule;
-import com.example.movieapp.service.ShootingScheduleService;
+import com.example.movieapp.repository.ShootingScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/schedules")
-@CrossOrigin(origins = "*")  // Allows frontend to access
-public class ShootingScheduleController {
+@Service
+public class ShootingScheduleService {
 
     @Autowired
-    private ShootingScheduleService scheduleService;
+    private ShootingScheduleRepository repository;
 
-    // GET all schedules
-    @GetMapping
-    public ResponseEntity<List<ShootingSchedule>> getAllSchedules() {
-        return ResponseEntity.ok(scheduleService.getAllSchedules());
+    // Create or Save a new schedule
+    public ShootingSchedule addSchedule(ShootingSchedule schedule) {
+        return repository.save(schedule);
     }
 
-    // POST: Add new schedule
-    @PostMapping
-    public ResponseEntity<ShootingSchedule> addSchedule(@RequestBody ShootingSchedule schedule) {
-        return ResponseEntity.ok(scheduleService.createSchedule(schedule));
+    // Get all schedules
+    public List<ShootingSchedule> getAllSchedules() {
+        return repository.findAll();
     }
 
-    // GET by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<ShootingSchedule> getScheduleById(@PathVariable Long id) {
-        return ResponseEntity.ok(scheduleService.getScheduleById(id));
+    // Get schedule by ID
+    public Optional<ShootingSchedule> getScheduleById(Long id) {
+        return repository.findById(id);
     }
 
-    // DELETE by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
-        scheduleService.deleteSchedule(id);
-        return ResponseEntity.noContent().build();
+    // Delete a schedule by ID
+    public String deleteSchedule(Long id) {
+        repository.deleteById(id);
+        return "Schedule with ID " + id + " has been deleted.";
+    }
+
+    // Update a schedule
+    public ShootingSchedule updateSchedule(Long id, ShootingSchedule updatedSchedule) {
+        Optional<ShootingSchedule> optional = repository.findById(id);
+
+        if (optional.isPresent()) {
+            ShootingSchedule schedule = optional.get();
+            schedule.setSceneNumber(updatedSchedule.getSceneNumber());
+            schedule.setDate(updatedSchedule.getDate());
+            schedule.setTime(updatedSchedule.getTime());
+            schedule.setLocation(updatedSchedule.getLocation());
+            schedule.setCast(updatedSchedule.getCast());
+            schedule.setCrew(updatedSchedule.getCrew());
+            schedule.setNotes(updatedSchedule.getNotes());
+            return repository.save(schedule);
+        } else {
+            throw new RuntimeException("Schedule not found with ID: " + id);
+        }
     }
 }
