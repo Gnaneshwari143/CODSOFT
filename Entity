@@ -1,32 +1,23 @@
-package com.example.movieassistant.controller;
+package com.example.movieassistant.repository;
 
 import com.example.movieassistant.entity.Schedules;
-import com.example.movieassistant.service.ScheduleService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/schedule")
-@CrossOrigin(origins = "*")
-public class ScheduleController {
+@Repository
+public interface ScheduleItemRepository extends JpaRepository<Schedules, Long> {
 
-    @Autowired
-    private ScheduleService scheduleService;
+    // Find schedules by specific shooting date
+    List<Schedules> findByDate(String date);
 
-    @PostMapping("/add")
-    public Schedules createSchedule(@RequestBody Schedules schedule) {
-        return scheduleService.addSchedule(schedule);
-    }
+    // Find all schedules for a given location
+    List<Schedules> findByLocation(String location);
 
-    @GetMapping("/all")
-    public List<Schedules> getSchedules() {
-        return scheduleService.getAllSchedules();
-    }
+    // Find schedules by cast member (partial match)
+    List<Schedules> findByCastContaining(String cast);
 
-    @DeleteMapping("/delete/{id}")
-    public void deleteSchedule(@PathVariable Long id) {
-        scheduleService.deleteSchedule(id);
-    }
+    // Find schedules by crew member (partial match)
+    List<Schedules> findByCrewContaining(String crew);
 }
