@@ -3,63 +3,83 @@ package com.example.movieassistant.service;
 import com.example.movieassistant.entity.Schedules;
 import com.example.movieassistant.exception.ScheduleNotFoundException;
 import com.example.movieassistant.repository.ScheduleItemRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@Service
-public class ScheduleService {
+class ScheduleServiceTest {
 
-    @Autowired
+    @InjectMocks
+    private ScheduleService scheduleService;
+
+    @Mock
     private ScheduleItemRepository scheduleRepository;
 
-    public List<Schedules> getAllSchedules() {
-        return scheduleRepository.findAll();
+    private Schedules sampleSchedule;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        sampleSchedule = new Schedules();
+        sampleSchedule.setId(1L);
+        sampleSchedule.setSceneNumber(10);
+        sampleSchedule.setDate(LocalDate.of(2025, 5, 16));
+        sampleSchedule.setTime(LocalTime.of(9, 0));
+        sampleSchedule.setLocation("Studio A");
+        sampleSchedule.setCast("John Doe, Jane Doe");
+        sampleSchedule.setCrew("Crew 1, Crew 2");
+        sampleSchedule.setNotes("Important scene");
     }
 
-    public Schedules getScheduleById(Long id) {
-        return scheduleRepository.findById(id)
-            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
+    @Test
+    void testGetScheduleById_Success() {
+        when(scheduleRepository.findById(1L)).thenReturn(Optional.of(sampleSchedule));
+        Schedules found = scheduleService.getScheduleById(1L);
+        assertEquals(sampleSchedule.getSceneNumber(), found.getSceneNumber());
     }
 
-    public Schedules addSchedule(Schedules schedule) {
-        return scheduleRepository.save(schedule);
+    @Test
+    void testGetScheduleById_NotFound() {
+        when(scheduleRepository.findById(2L)).thenReturn(Optional.empty());
+        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.getScheduleById(2L));
     }
 
-    public Schedules updateSchedule(Long id, Schedules updatedSchedule) {
-        Schedules existingSchedule = scheduleRepository.findById(id)
-            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
-
-        // Update the fields as needed
-        existingSchedule.setSceneNumber(updatedSchedule.getSceneNumber());
-        existingSchedule.setDate(updatedSchedule.getDate());
-        existingSchedule.setTime(updatedSchedule.getTime());
-        existingSchedule.setLocation(updatedSchedule.getLocation());
-        existingSchedule.setCast(updatedSchedule.getCast());
-        existingSchedule.setCrew(updatedSchedule.getCrew());
-        existingSchedule.setNotes(updatedSchedule.getNotes());
-
-        return scheduleRepository.save(existingSchedule);
+    @Test
+    void testAddSchedule() {
+        when(scheduleRepository.save(any(Schedules.class))).thenReturn(sampleSchedule);
+        Schedules saved = scheduleService.addSchedule(sampleSchedule);
+        assertNotNull(saved);
+        assertEquals(10, saved.getSceneNumber());
     }
 
-    public void deleteSchedule(Long id) {
-        Schedules existingSchedule = scheduleRepository.findById(id)
-            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
+    @Test
+    void testGetAllSchedules() {
+        List<Schedules> schedulesList = Arrays.asList(sampleSchedule);
+        when(scheduleRepository.findAll()).thenReturn(schedulesList);
+        List<Schedules> result = scheduleService.getAllSchedules();
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+    }
 
-        scheduleRepository.delete(existingSchedule);
+    @Test
+    void testDeleteSchedule_Success() {
+        when(scheduleRepository.findById(1L)).thenReturn(Optional.of(sampleSchedule));
+        doNothing().when(scheduleRepository).delete(sampleSchedule);
+
+        assertDoesNotThrow(() -> scheduleService.deleteSchedule(1L));
+        verify(scheduleRepository, times(1)).delete(sampleSchedule);
+    }
+
+    @Test
+    void testDeleteSchedule_NotFound() {
+        when(scheduleRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.deleteSchedule(99L));
     }
 }
-
-
-
-
-package com.example.movieassistant.exception;
-
-public class ScheduleNotFoundException extends RuntimeException {
-
-    public ScheduleNotFoundException(String message) {
-        super(message);
-    }
-}
-
