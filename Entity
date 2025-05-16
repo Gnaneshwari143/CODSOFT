@@ -1,23 +1,65 @@
-package com.example.movieassistant.repository;
+package com.example.movieassistant.service;
 
 import com.example.movieassistant.entity.Schedules;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.example.movieassistant.exception.ScheduleNotFoundException;
+import com.example.movieassistant.repository.ScheduleItemRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Repository
-public interface ScheduleItemRepository extends JpaRepository<Schedules, Long> {
+@Service
+public class ScheduleService {
 
-    // Find schedules by specific shooting date
-    List<Schedules> findByDate(String date);
+    @Autowired
+    private ScheduleItemRepository scheduleRepository;
 
-    // Find all schedules for a given location
-    List<Schedules> findByLocation(String location);
+    public List<Schedules> getAllSchedules() {
+        return scheduleRepository.findAll();
+    }
 
-    // Find schedules by cast member (partial match)
-    List<Schedules> findByCastContaining(String cast);
+    public Schedules getScheduleById(Long id) {
+        return scheduleRepository.findById(id)
+            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
+    }
 
-    // Find schedules by crew member (partial match)
-    List<Schedules> findByCrewContaining(String crew);
+    public Schedules addSchedule(Schedules schedule) {
+        return scheduleRepository.save(schedule);
+    }
+
+    public Schedules updateSchedule(Long id, Schedules updatedSchedule) {
+        Schedules existingSchedule = scheduleRepository.findById(id)
+            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
+
+        // Update the fields as needed
+        existingSchedule.setSceneNumber(updatedSchedule.getSceneNumber());
+        existingSchedule.setDate(updatedSchedule.getDate());
+        existingSchedule.setTime(updatedSchedule.getTime());
+        existingSchedule.setLocation(updatedSchedule.getLocation());
+        existingSchedule.setCast(updatedSchedule.getCast());
+        existingSchedule.setCrew(updatedSchedule.getCrew());
+        existingSchedule.setNotes(updatedSchedule.getNotes());
+
+        return scheduleRepository.save(existingSchedule);
+    }
+
+    public void deleteSchedule(Long id) {
+        Schedules existingSchedule = scheduleRepository.findById(id)
+            .orElseThrow(() -> new ScheduleNotFoundException("Schedule with ID " + id + " not found"));
+
+        scheduleRepository.delete(existingSchedule);
+    }
 }
+
+
+
+
+package com.example.movieassistant.exception;
+
+public class ScheduleNotFoundException extends RuntimeException {
+
+    public ScheduleNotFoundException(String message) {
+        super(message);
+    }
+}
+
