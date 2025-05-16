@@ -6,8 +6,7 @@ import com.example.movieassistant.repository.ScheduleItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
+
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,27 +27,25 @@ class ScheduleServiceTest {
         MockitoAnnotations.openMocks(this);
 
         sampleSchedule = new Schedules();
-        sampleSchedule.setId(1L);
-        sampleSchedule.setSceneNumber(10);
-        sampleSchedule.setDate(LocalDate.of(2025, 5, 16));
-        sampleSchedule.setTime(LocalTime.of(9, 0));
-        sampleSchedule.setLocation("Studio A");
-        sampleSchedule.setCast("John Doe, Jane Doe");
-        sampleSchedule.setCrew("Crew 1, Crew 2");
-        sampleSchedule.setNotes("Important scene");
+        sampleSchedule.setId(1);
+        sampleSchedule.setDate("2025-05-16");
+        sampleSchedule.setTime("09:00");
+        sampleSchedule.setCast(Arrays.asList("John Doe", "Jane Doe"));
+        sampleSchedule.setCrew(Arrays.asList("Crew Member 1", "Crew Member 2"));
     }
 
     @Test
     void testGetScheduleById_Success() {
-        when(scheduleRepository.findById(1L)).thenReturn(Optional.of(sampleSchedule));
-        Schedules found = scheduleService.getScheduleById(1L);
-        assertEquals(sampleSchedule.getSceneNumber(), found.getSceneNumber());
+        when(scheduleRepository.findById(1)).thenReturn(Optional.of(sampleSchedule));
+        Schedules found = scheduleService.getScheduleById(1);
+        assertEquals(sampleSchedule.getDate(), found.getDate());
+        assertEquals(sampleSchedule.getCast().size(), found.getCast().size());
     }
 
     @Test
     void testGetScheduleById_NotFound() {
-        when(scheduleRepository.findById(2L)).thenReturn(Optional.empty());
-        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.getScheduleById(2L));
+        when(scheduleRepository.findById(2)).thenReturn(Optional.empty());
+        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.getScheduleById(2));
     }
 
     @Test
@@ -56,12 +53,13 @@ class ScheduleServiceTest {
         when(scheduleRepository.save(any(Schedules.class))).thenReturn(sampleSchedule);
         Schedules saved = scheduleService.addSchedule(sampleSchedule);
         assertNotNull(saved);
-        assertEquals(10, saved.getSceneNumber());
+        assertEquals("2025-05-16", saved.getDate());
+        assertEquals(2, saved.getCrew().size());
     }
 
     @Test
     void testGetAllSchedules() {
-        List<Schedules> schedulesList = Arrays.asList(sampleSchedule);
+        List<Schedules> schedulesList = Collections.singletonList(sampleSchedule);
         when(scheduleRepository.findAll()).thenReturn(schedulesList);
         List<Schedules> result = scheduleService.getAllSchedules();
         assertFalse(result.isEmpty());
@@ -70,16 +68,16 @@ class ScheduleServiceTest {
 
     @Test
     void testDeleteSchedule_Success() {
-        when(scheduleRepository.findById(1L)).thenReturn(Optional.of(sampleSchedule));
+        when(scheduleRepository.findById(1)).thenReturn(Optional.of(sampleSchedule));
         doNothing().when(scheduleRepository).delete(sampleSchedule);
 
-        assertDoesNotThrow(() -> scheduleService.deleteSchedule(1L));
+        assertDoesNotThrow(() -> scheduleService.deleteSchedule(1));
         verify(scheduleRepository, times(1)).delete(sampleSchedule);
     }
 
     @Test
     void testDeleteSchedule_NotFound() {
-        when(scheduleRepository.findById(99L)).thenReturn(Optional.empty());
-        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.deleteSchedule(99L));
+        when(scheduleRepository.findById(99)).thenReturn(Optional.empty());
+        assertThrows(ScheduleNotFoundException.class, () -> scheduleService.deleteSchedule(99));
     }
 }
