@@ -1,56 +1,32 @@
-package com.example.movieapp.service;
+package com.example.movieassistant.controller;
 
-import com.example.movieapp.model.ShootingSchedule;
-import com.example.movieapp.repository.ShootingScheduleRepository;
+import com.example.movieassistant.entity.Schedules;
+import com.example.movieassistant.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-@Service
-public class ScheduleService {
+@RestController
+@RequestMapping("/api/schedule")
+@CrossOrigin(origins = "*")
+public class ScheduleController {
 
     @Autowired
-    private ShootingScheduleRepository repository;
+    private ScheduleService scheduleService;
 
-    // Create or Save a new schedule
-    public ShootingSchedule addSchedule(ShootingSchedule schedule) {
-        return repository.save(schedule);
+    @PostMapping("/add")
+    public Schedules createSchedule(@RequestBody Schedules schedule) {
+        return scheduleService.addSchedule(schedule);
     }
 
-    // Get all schedules
-    public List<ShootingSchedule> getAllSchedules() {
-        return repository.findAll();
+    @GetMapping("/all")
+    public List<Schedules> getSchedules() {
+        return scheduleService.getAllSchedules();
     }
 
-    // Get schedule by ID
-    public Optional<ShootingSchedule> getScheduleById(Long id) {
-        return repository.findById(id);
-    }
-
-    // Delete a schedule by ID
-    public String deleteSchedule(Long id) {
-        repository.deleteById(id);
-        return "Schedule with ID " + id + " has been deleted.";
-    }
-
-    // Update a schedule
-    public ShootingSchedule updateSchedule(Long id, ShootingSchedule updatedSchedule) {
-        Optional<ShootingSchedule> optional = repository.findById(id);
-
-        if (optional.isPresent()) {
-            ShootingSchedule schedule = optional.get();
-            schedule.setSceneNumber(updatedSchedule.getSceneNumber());
-            schedule.setDate(updatedSchedule.getDate());
-            schedule.setTime(updatedSchedule.getTime());
-            schedule.setLocation(updatedSchedule.getLocation());
-            schedule.setCast(updatedSchedule.getCast());
-            schedule.setCrew(updatedSchedule.getCrew());
-            schedule.setNotes(updatedSchedule.getNotes());
-            return repository.save(schedule);
-        } else {
-            throw new RuntimeException("Schedule not found with ID: " + id);
-        }
+    @DeleteMapping("/delete/{id}")
+    public void deleteSchedule(@PathVariable Long id) {
+        scheduleService.deleteSchedule(id);
     }
 }
