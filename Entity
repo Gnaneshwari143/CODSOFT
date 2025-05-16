@@ -1,0 +1,28 @@
+package com.director.assistant.model;
+
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+public class Schedule {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private int sceneNumber;
+    private String date;
+    private String time;
+    private String location;
+
+    @ElementCollection
+    private List<String> cast;
+
+    @ElementCollection
+    private List<String> crew;
+
+    private String notes;
+
+    // Getters and setters
+    // (You can use Lombok @Data if preferred)
+}
