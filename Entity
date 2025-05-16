@@ -1,23 +1,43 @@
--- Main Schedule table
-CREATE TABLE Schedule (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    scene_number INT NOT NULL CHECK (scene_number >= 1),
-    date VARCHAR(10) NOT NULL CHECK (date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
-    time VARCHAR(10) NOT NULL CHECK (time REGEXP '^(0?[1-9]|1[0-2]):[0-5][0-9]\\s?(AM|PM|am|pm)$'),
-    location VARCHAR(100) NOT NULL,
-    notes VARCHAR(500)
-);
+package com.example.movieapp.controller;
 
--- Table for storing cast members
-CREATE TABLE schedule_cast (
-    schedule_id BIGINT NOT NULL,
-    cast_member VARCHAR(255) NOT NULL,
-    FOREIGN KEY (schedule_id) REFERENCES Schedule(id) ON DELETE CASCADE
-);
+import com.example.movieapp.model.ShootingSchedule;
+import com.example.movieapp.service.ShootingScheduleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
--- Table for storing crew members
-CREATE TABLE schedule_crew (
-    schedule_id BIGINT NOT NULL,
-    crew_member VARCHAR(255) NOT NULL,
-    FOREIGN KEY (schedule_id) REFERENCES Schedule(id) ON DELETE CASCADE
-);
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/schedules")
+@CrossOrigin(origins = "*")  // Allows frontend to access
+public class ShootingScheduleController {
+
+    @Autowired
+    private ShootingScheduleService scheduleService;
+
+    // GET all schedules
+    @GetMapping
+    public ResponseEntity<List<ShootingSchedule>> getAllSchedules() {
+        return ResponseEntity.ok(scheduleService.getAllSchedules());
+    }
+
+    // POST: Add new schedule
+    @PostMapping
+    public ResponseEntity<ShootingSchedule> addSchedule(@RequestBody ShootingSchedule schedule) {
+        return ResponseEntity.ok(scheduleService.createSchedule(schedule));
+    }
+
+    // GET by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<ShootingSchedule> getScheduleById(@PathVariable Long id) {
+        return ResponseEntity.ok(scheduleService.getScheduleById(id));
+    }
+
+    // DELETE by ID
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
+        scheduleService.deleteSchedule(id);
+        return ResponseEntity.noContent().build();
+    }
+}
