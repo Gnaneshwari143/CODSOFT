@@ -1,27 +1,63 @@
-package com.director.assistant.controller;
+/* Layout Container */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  background: linear-gradient(135deg, #3e2c1f, #2b1d14); /* Rich brown background */
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-import com.director.assistant.model.Schedule;
-import com.director.assistant.repository.ScheduleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+/* Sidebar Styles */
+.sidebar {
+  width: 250px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2rem 1rem;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
+}
 
-import java.util.List;
+.sidebar h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
 
-@RestController
-@RequestMapping("/api/schedules")
-@CrossOrigin(origins = "*") // Allow frontend requests
-public class ScheduleController {
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
 
-    @Autowired
-    private ScheduleRepository repository;
+.sidebar li {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
 
-    @PostMapping
-    public Schedule addSchedule(@RequestBody Schedule schedule) {
-        return repository.save(schedule);
-    }
+.sidebar li:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
-    @GetMapping
-    public List<Schedule> getAllSchedules() {
-        return repository.findAll();
-    }
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Glassmorphism Content Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
 }
