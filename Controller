@@ -1,7 +1,100 @@
-// src/interfaces/Resource.ts
-export interface Resource {
-    name: 'Red Dress' | 'Wooden Staff' | 'Arri Camera' | 'Boom Mic' | 'Tripod' | 'Catering Van' | 'Actor Trailer' | 'Lunch for 50' | 'Sound Mixer' | 'Lighting Kit' | 'Clapperboard' | 'Makeup Kit' | ''; // Added ''
-    type: 'Personnel' | 'Equipment' | 'Location' | 'Wardrobe' | 'Props' | 'Set Decoration' | 'Vehicles' | 'Catering' | 'Supplies' | 'Miscellaneous' | ''; // Added ''
-    availability: 'Available' | 'Unavailable' | 'In Use' | 'Maintenance' | 'Booked' | 'Needs Repair';
-    id?: number; // Add this if your backend returns an ID
+// src/components/ScenePrioritization.tsx
+import React, { useState } from 'react';
+// import { setScenePriority } from '../api/scene'; // Uncomment when backend is ready
+
+interface ScenePriority {
+    sceneNumber: number;
+    priorityLevel: number; // e.g., 1 (highest) to 5 (lowest)
 }
+
+const ScenePrioritization: React.FC = () => {
+    const [scenePriorities, setScenePriorities] = useState<ScenePriority[]>([]);
+    const [newPriority, setNewPriority] = useState<ScenePriority>({
+        sceneNumber: 0,
+        priorityLevel: 1 // Default to high priority
+    });
+
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setNewPriority(prev => ({
+            ...prev,
+            [name]: parseInt(value)
+        }));
+        setMessage(null);
+    };
+
+    const handleSetPriority = async () => {
+        if (newPriority.sceneNumber <= 0 || newPriority.priorityLevel < 1 || newPriority.priorityLevel > 5) {
+            setMessage({ type: 'error', text: 'Please enter valid Scene Number ( > 0) and Priority (1-5).' });
+            return;
+        }
+
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            // const setPriorityResult = await setScenePriority(newPriority); // Uncomment for backend
+            // setScenePriorities(prev => [...prev, setPriorityResult]); // Uncomment for backend
+
+            // For now, local state update:
+            setScenePriorities(prev => [...prev, { ...newPriority }]);
+
+            setMessage({ type: 'success', text: `Priority for Scene ${newPriority.sceneNumber} set successfully!` });
+            setNewPriority({
+                sceneNumber: 0,
+                priorityLevel: 1
+            });
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to set scene priority.' });
+            console.error("Error setting priority:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="glass-card scene-prioritization-container">
+            <h2>Scene Prioritization</h2>
+
+            {message && (
+                <div className={`message ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <div className="form-group">
+                <label htmlFor="sceneNumber">Scene Number:</label>
+                <input type="number" id="sceneNumber" name="sceneNumber" value={newPriority.sceneNumber || ''} onChange={handleInputChange} className="form-control" placeholder="e.g., 1" required />
+            </div>
+            <div className="form-group">
+                <label htmlFor="priorityLevel">Priority Level (1-5, 1=Highest):</label>
+                <input type="number" id="priorityLevel" name="priorityLevel" value={newPriority.priorityLevel || ''} onChange={handleInputChange} className="form-control" placeholder="e.g., 1 (highest)" min="1" max="5" required />
+            </div>
+
+            <button onClick={handleSetPriority} className="set-priority-button" disabled={loading}>
+                {loading ? 'Setting...' : 'Set Priority'}
+            </button>
+
+            <div className="priorities-list">
+                <h3>Set Priorities</h3>
+                {scenePriorities.length === 0 ? (
+                    <p>No priorities set yet.</p>
+                ) : (
+                    <ul>
+                        {scenePriorities.map((item, index) => (
+                            <li key={item.sceneNumber + '-' + index}>
+                                Scene: <strong>{item.sceneNumber}</strong> - Priority: <strong>{item.priorityLevel}</strong>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default ScenePrioritization;
