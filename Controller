@@ -1,27 +1,241 @@
-/* src/App.css or src/styles/formLayout.css */
+// src/components/ScriptBreakdown.tsx
+import React, { useState } from 'react';
+// import { createScriptItem, fetchScriptItems } from '../api/scriptbreakdown'; // Uncomment when backend is ready
 
-.form-row {
-    display: flex; /* Enables flexbox */
-    gap: 20px; /* Space between the elements */
-    margin-bottom: 15px; /* Maintain vertical spacing for the row itself */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    align-items: flex-start; /* Align items to the top */
+interface ScriptItem {
+    scriptNumber: number; // Or string, depending on your ID format
+    description: string;
+    characters: string[]; // comma-separated
+    location: string;
+    equipment: string[]; // comma-separated
+    notes: string;
+    // id?: number; // Add if backend assigns ID
 }
 
-.form-row .form-group {
-    flex: 1; /* Allows each form-group to take up equal space */
-    min-width: 150px; /* Ensures minimum width before wrapping */
-    margin-bottom: 0; /* Remove default margin-bottom from form-group if it's inside a row */
-}
+const ScriptBreakdown: React.FC = () => {
+    const [scriptItems, setScriptItems] = useState<ScriptItem[]>([]);
+    const [newScriptItem, setNewScriptItem] = useState<ScriptItem>({
+        scriptNumber: 0, // Initial state is 0 for placeholder logic
+        description: "",
+        characters: [],
+        location: "",
+        equipment: [],
+        notes: ""
+    });
 
-/* Optional: Adjust for smaller screens if needed */
-@media (max-width: 600px) {
-    .form-row {
-        flex-direction: column; /* Stack elements vertically on very small screens */
-        gap: 0; /* Remove gap when stacked */
-    }
-    .form-row .form-group {
-        width: 100%; /* Take full width when stacked */
-        margin-bottom: 15px; /* Re-add margin for stacked items */
-    }
-}
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        
+        let processedValue: string | number = value;
+        if (name === 'scriptNumber') {
+            processedValue = value === '' ? 0 : parseInt(value); // Convert to 0 if empty for state, so 'required' works well
+        }
+
+        setNewScriptItem(prev => ({
+            ...prev,
+            [name]: processedValue
+        }));
+        setMessage(null); // Clear messages when user types
+    };
+
+    const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'characters' | 'equipment') => {
+        const { value } = e.target;
+        setNewScriptItem(prev => ({
+            ...prev,
+            [field]: value.split(',').map(item => item.trim()).filter(item => item !== '')
+        }));
+        setMessage(null); // Clear messages when user types
+    };
+
+    const handleAddScene = async () => {
+        setMessage(null); // Clear any previous messages
+
+        // --- START: Enhanced Validation Checks ---
+        if (newScriptItem.scriptNumber <= 0 || isNaN(newScriptItem.scriptNumber)) {
+            setMessage({ type: 'error', text: 'Please enter a valid Script Number (must be greater than 0).' });
+            return;
+        }
+        if (!newScriptItem.description.trim()) {
+            setMessage({ type: 'error', text: 'Please enter a description for the scene.' });
+            return;
+        }
+        if (!newScriptItem.location.trim()) {
+            setMessage({ type: 'error', text: 'Please enter a location for the scene.' });
+            return;
+        }
+        // Characters and Equipment are often optional, but you can make them required if necessary:
+        // if (newScriptItem.characters.length === 0) {
+        //     setMessage({ type: 'error', text: 'Please list at least one character.' });
+        //     return;
+        // }
+        // if (newScriptItem.equipment.length === 0) {
+        //     setMessage({ type: 'error', text: 'Please list any required equipment.' });
+        //     return;
+        // }
+        // --- END: Enhanced Validation Checks ---
+
+        setLoading(true);
+        try {
+            // const createdItem = await createScriptItem(newScriptItem); // Uncomment for backend
+            // setScriptItems(prev => [...prev, createdItem]); // Uncomment for backend
+
+            // For now, local state update:
+            setScriptItems(prev => [...prev, { ...newScriptItem }]);
+
+            setMessage({ type: 'success', text: 'Script breakdown item added successfully!' });
+            // Reset the form after successful addition
+            setNewScriptItem({
+                scriptNumber: 0,
+                description: "",
+                characters: [],
+                location: "",
+                equipment: [],
+                notes: ""
+            });
+            setTimeout(() => setMessage(null), 3000); // Hide success message after 3 seconds
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to add script breakdown item. Please try again.' });
+            console.error("Error adding script breakdown item:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // useEffect(() => { // Uncomment to fetch script items on component mount
+    //     const getScriptItems = async () => {
+    //         setLoading(true);
+    //         try {
+    //             const data = await fetchScriptItems();
+    //             setScriptItems(data);
+    //         } catch (err: any) {
+    //             console.error("Error fetching script items:", err);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+    //     getScriptItems();
+    // }, []);
+
+    return (
+        <div className="glass-card script-breakdown-container">
+            <h2>Script Breakdown</h2>
+
+            {message && (
+                <div className={`message ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
+
+            {/* Script Number and Description (can be in one row or stacked based on preference) */}
+            <div className="form-group">
+                <label htmlFor="scriptNumber">Script Number:</label>
+                <input
+                    type="number"
+                    id="scriptNumber"
+                    name="scriptNumber"
+                    value={newScriptItem.scriptNumber === 0 ? '' : newScriptItem.scriptNumber} // Display empty if 0
+                    onChange={handleInputChange}
+                    className="form-control"
+                    placeholder="e.g., 10"
+                    required
+                />
+            </div>
+            <div className="form-group">
+                <label htmlFor="description">Description:</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    value={newScriptItem.description}
+                    onChange={handleInputChange}
+                    className="form-control"
+                    placeholder="e.g., Exterior day - John and Jane discuss their plans."
+                    required
+                ></textarea>
+            </div>
+
+            {/* Characters and Location in a row */}
+            <div className="form-row">
+                <div className="form-group">
+                    <label htmlFor="characters">Characters (comma separated):</label>
+                    <input
+                        type="text"
+                        id="characters"
+                        name="characters"
+                        value={newScriptItem.characters.join(', ')}
+                        onChange={(e) => handleArrayChange(e, 'characters')}
+                        className="form-control"
+                        placeholder="e.g., John, Jane, Extra #1"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="location">Location:</label>
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={newScriptItem.location}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="e.g., Old Bridge, City Park"
+                        required
+                    />
+                </div>
+            </div>
+
+            {/* Equipment and Notes in a row */}
+            <div className="form-row">
+                <div className="form-group">
+                    <label htmlFor="equipment">Equipment (comma separated):</label>
+                    <input
+                        type="text"
+                        id="equipment"
+                        name="equipment"
+                        value={newScriptItem.equipment.join(', ')}
+                        onChange={(e) => handleArrayChange(e, 'equipment')}
+                        className="form-control"
+                        placeholder="e.g., Dolly, Steadicam, Boom Mic"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="notes">Notes:</label>
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        value={newScriptItem.notes}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="e.g., Needs green screen for background."
+                    ></textarea>
+                </div>
+            </div>
+
+            <button onClick={handleAddScene} className="add-scene-button" disabled={loading}>
+                {loading ? 'Adding...' : 'Add Scene'}
+            </button>
+
+            <div className="script-items-list">
+                <h3>Breakdown Items</h3>
+                {scriptItems.length === 0 ? (
+                    <p>No script breakdown items added yet.</p>
+                ) : (
+                    <ul>
+                        {scriptItems.map((item, index) => (
+                            <li key={item.scriptNumber + '-' + index}>
+                                <strong>Scene {item.scriptNumber}:</strong> {item.description}<br/>
+                                <strong>Characters:</strong> {item.characters.join(', ') || 'N/A'}<br/>
+                                <strong>Location:</strong> {item.location}<br/>
+                                <strong>Equipment:</strong> {item.equipment.join(', ') || 'N/A'}<br/>
+                                <strong>Notes:</strong> {item.notes || 'N/A'}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default ScriptBreakdown;
