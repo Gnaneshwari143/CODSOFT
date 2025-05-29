@@ -1,107 +1,82 @@
-// src/components/ShootingSchedule.tsx
+// src/components/ScenePrioritization.tsx
 import React, { useState } from 'react';
-// import { createSchedule, fetchSchedules } from '../api/schedule'; // Uncomment when backend is ready
+// import { setScenePriority } from '../api/scene'; // Uncomment when backend is ready
 
-interface ScheduleItem {
-    movieId: string;
+interface ScenePriority {
     sceneNumber: number;
-    date: string; // YYYY-MM-DD
-    time: string; // HH:MM
-    location: string;
-    cast: string[]; // Array of cast IDs/names
-    crew: string[]; // Array of crew IDs/names
-    notes: string;
-    // id?: number; // Add if backend assigns ID
+    priorityLevel: number; // e.g., 1 (highest) to 5 (lowest)
 }
 
-const ShootingSchedule: React.FC = () => {
-    const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-    const [newSchedule, setNewSchedule] = useState<ScheduleItem>({
-        movieId: "",
+const ScenePrioritization: React.FC = () => {
+    const [scenePriorities, setScenePriorities] = useState<ScenePriority[]>([]);
+    const [newPriority, setNewPriority] = useState<ScenePriority>({
         sceneNumber: 0,
-        date: "",
-        time: "",
-        location: "",
-        cast: [],
-        crew: [],
-        notes: ""
+        priorityLevel: 1 // Default to high priority
     });
 
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setNewSchedule(prev => ({
+        // Convert to number, or null if empty string to allow clearing input
+        const numericValue = value === '' ? 0 : parseInt(value);
+
+        setNewPriority(prev => ({
             ...prev,
-            [name]: name === 'sceneNumber' ? parseInt(value) : value
+            [name]: numericValue
         }));
-        setMessage(null);
+        setMessage(null); // Clear messages when user types
     };
 
-    const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'cast' | 'crew') => {
-        const { value } = e.target;
-        setNewSchedule(prev => ({
-            ...prev,
-            [field]: value.split(',').map(item => item.trim()).filter(item => item !== '')
-        }));
-        setMessage(null);
-    };
+    const handleSetPriority = async () => {
+        setMessage(null); // Clear any previous messages
 
-    const handleAddSchedule = async () => {
-        if (!newSchedule.movieId || !newSchedule.date || !newSchedule.time || !newSchedule.location || newSchedule.sceneNumber <= 0) {
-            setMessage({ type: 'error', text: 'Please fill all required fields.' });
+        // --- START: Enhanced Validation Checks ---
+        if (newPriority.sceneNumber === 0) {
+            setMessage({ type: 'error', text: 'Scene Number cannot be 0. Please enter a valid scene number.' });
             return;
         }
+        if (isNaN(newPriority.sceneNumber)) {
+            setMessage({ type: 'error', text: 'Scene Number must be a valid number.' });
+            return;
+        }
+        if (newPriority.priorityLevel < 1 || newPriority.priorityLevel > 5) {
+            setMessage({ type: 'error', text: 'Priority Level must be between 1 and 5 (1=Highest, 5=Lowest).' });
+            return;
+        }
+        if (isNaN(newPriority.priorityLevel)) {
+            setMessage({ type: 'error', text: 'Priority Level must be a valid number.' });
+            return;
+        }
+        // --- END: Enhanced Validation Checks ---
 
         setLoading(true);
-        setMessage(null);
 
         try {
-            // const createdSchedule = await createSchedule(newSchedule); // Uncomment for backend
-            // setSchedules(prev => [...prev, createdSchedule]); // Uncomment for backend
+            // const setPriorityResult = await setScenePriority(newPriority); // Uncomment for backend
+            // setScenePriorities(prev => [...prev, setPriorityResult]); // Uncomment for backend
 
             // For now, local state update:
-            setSchedules(prev => [...prev, { ...newSchedule }]);
+            setScenePriorities(prev => [...prev, { ...newPriority }]);
 
-            setMessage({ type: 'success', text: 'Schedule item added successfully!' });
-            setNewSchedule({
-                movieId: "",
+            setMessage({ type: 'success', text: `Priority for Scene ${newPriority.sceneNumber} set successfully!` });
+            setNewPriority({
                 sceneNumber: 0,
-                date: "",
-                time: "",
-                location: "",
-                cast: [],
-                crew: [],
-                notes: ""
+                priorityLevel: 1
             });
             setTimeout(() => setMessage(null), 3000);
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.message || 'Failed to add schedule item.' });
-            console.error("Error adding schedule item:", error);
+            setMessage({ type: 'error', text: error.message || 'Failed to set scene priority. Please try again.' });
+            console.error("Error setting priority:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // useEffect(() => { // Uncomment to fetch schedules on component mount
-    //     const getSchedules = async () => {
-    //         setLoading(true);
-    //         try {
-    //             const data = await fetchSchedules();
-    //             setSchedules(data);
-    //         } catch (err: any) {
-    //             console.error("Error fetching schedules:", err);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-    //     getSchedules();
-    // }, []);
-
     return (
-        <div className="glass-card schedule-management-container">
-            <h2>Shooting Schedule Management</h2>
+        <div className="glass-card scene-prioritization-container">
+            <h2>Scene Prioritization</h2>
 
             {message && (
                 <div className={`message ${message.type}`}>
@@ -110,56 +85,47 @@ const ShootingSchedule: React.FC = () => {
             )}
 
             <div className="form-group">
-                <label htmlFor="movieId">Movie ID:</label>
-                <input type="text" id="movieId" name="movieId" value={newSchedule.movieId} onChange={handleInputChange} className="form-control" placeholder="e.g., PROD001" required />
-            </div>
-            <div className="form-group">
                 <label htmlFor="sceneNumber">Scene Number:</label>
-                <input type="number" id="sceneNumber" name="sceneNumber" value={newSchedule.sceneNumber || ''} onChange={handleInputChange} className="form-control" placeholder="e.g., 1, 2.5" required />
+                <input
+                    type="number"
+                    id="sceneNumber"
+                    name="sceneNumber"
+                    value={newPriority.sceneNumber === 0 ? '' : newPriority.sceneNumber} // Display empty string if 0 for better UX
+                    onChange={handleInputChange}
+                    className="form-control"
+                    placeholder="e.g., 1"
+                    required
+                />
             </div>
             <div className="form-group">
-                <label htmlFor="date">Date:</label>
-                <input type="date" id="date" name="date" value={newSchedule.date} onChange={handleInputChange} className="form-control" required />
-            </div>
-            <div className="form-group">
-                <label htmlFor="time">Time:</label>
-                <input type="time" id="time" name="time" value={newSchedule.time} onChange={handleInputChange} className="form-control" required />
-            </div>
-            <div className="form-group">
-                <label htmlFor="location">Location:</label>
-                <input type="text" id="location" name="location" value={newSchedule.location} onChange={handleInputChange} className="form-control" placeholder="e.g., Park Street, Studio A" required />
-            </div>
-            <div className="form-group">
-                <label htmlFor="cast">Cast (comma separated):</label>
-                <input type="text" id="cast" name="cast" value={newSchedule.cast.join(', ')} onChange={(e) => handleArrayChange(e, 'cast')} className="form-control" placeholder="e.g., John Doe, Jane Smith" />
-            </div>
-            <div className="form-group">
-                <label htmlFor="crew">Crew (comma separated):</label>
-                <input type="text" id="crew" name="crew" value={newSchedule.crew.join(', ')} onChange={(e) => handleArrayChange(e, 'crew')} className="form-control" placeholder="e.g., Director, DP, Sound Mixer" />
-            </div>
-            <div className="form-group">
-                <label htmlFor="notes">Notes:</label>
-                <textarea id="notes" name="notes" value={newSchedule.notes} onChange={handleInputChange} className="form-control" placeholder="e.g., Exterior day, dialogue heavy"></textarea>
+                <label htmlFor="priorityLevel">Priority Level (1-5, 1=Highest):</label>
+                <input
+                    type="number"
+                    id="priorityLevel"
+                    name="priorityLevel"
+                    value={newPriority.priorityLevel === 0 ? '' : newPriority.priorityLevel} // Display empty string if 0 for better UX
+                    onChange={handleInputChange}
+                    className="form-control"
+                    placeholder="e.g., 1 (highest)"
+                    min="1"
+                    max="5"
+                    required
+                />
             </div>
 
-            <button onClick={handleAddSchedule} className="add-schedule-button" disabled={loading}>
-                {loading ? 'Adding...' : 'Add Schedule Item'}
+            <button onClick={handleSetPriority} className="set-priority-button" disabled={loading}>
+                {loading ? 'Setting...' : 'Set Priority'}
             </button>
 
-            <div className="schedules-list">
-                <h3>Current Schedule Items</h3>
-                {schedules.length === 0 ? (
-                    <p>No schedule items added yet.</p>
+            <div className="priorities-list">
+                <h3>Set Priorities</h3>
+                {scenePriorities.length === 0 ? (
+                    <p>No priorities set yet.</p>
                 ) : (
                     <ul>
-                        {schedules.map((item, index) => (
-                            <li key={item.movieId + item.sceneNumber + index}>
-                                <strong>Movie: {item.movieId} | Scene: {item.sceneNumber}</strong><br/>
-                                Date: {item.date} at {item.time}<br/>
-                                Location: {item.location}<br/>
-                                Cast: {item.cast.join(', ')}<br/>
-                                Crew: {item.crew.join(', ')}<br/>
-                                Notes: {item.notes}
+                        {scenePriorities.map((item, index) => (
+                            <li key={item.sceneNumber + '-' + index}>
+                                Scene: <strong>{item.sceneNumber}</strong> - Priority: <strong>{item.priorityLevel}</strong>
                             </li>
                         ))}
                     </ul>
@@ -169,4 +135,4 @@ const ShootingSchedule: React.FC = () => {
     );
 };
 
-export default ShootingSchedule;
+export default ScenePrioritization;
