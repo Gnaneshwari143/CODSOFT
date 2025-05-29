@@ -1,103 +1,242 @@
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
-public class AssistantDirectorController {
-    private final AssistantDirectorService service;
+import React, { useState } from 'react';
+// Assuming createScheduleItem exists in your api/schedule.ts or similar file
+import { createScheduleItem } from '../api/schedule'; // <-- Make sure this path is correct
 
-    // ======================= Schedule Endpoints =======================
-    @PostMapping("/schedules")
-    public ResponseEntity<ScheduleDTO> createSchedule(@Valid @RequestBody ScheduleDTO scheduleDTO) 
-        throws MovieProductionException {
-        return new ResponseEntity<>(service.createSchedule(scheduleDTO), HttpStatus.CREATED);
-    }
+// Import any CSS you need
+import './shootingSchedule.css';
+import './AssistantDirector.css'; // Assuming you have other CSS files
 
-    @PutMapping("/schedules/{id}")
-    public ResponseEntity<ScheduleDTO> updateSchedule(
-            @PathVariable Integer id,
-            @Valid @RequestBody ScheduleDTO scheduleDTO) 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.updateSchedule(id, scheduleDTO));
-    }
-
-    @GetMapping("/schedules")
-    public ResponseEntity<List<ScheduleDTO>> getAllSchedules() 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.getAllSchedules());
-    }
-
-    @GetMapping("/schedules/{id}")
-    public ResponseEntity<ScheduleDTO> getScheduleById(@PathVariable Integer id) 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.getScheduleById(id));
-    }
-
-    @DeleteMapping("/schedules/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable Integer id) 
-        throws MovieProductionException {
-        service.deleteSchedule(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ======================= Script Endpoints =======================
-    @PostMapping("/scripts")
-    public ResponseEntity<ScriptsDTO> uploadScript(@Valid @RequestBody ScriptsDTO scriptsDTO) 
-        throws MovieProductionException {
-        return new ResponseEntity<>(service.uploadScript(scriptsDTO), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/scripts/{id}/version")
-    public ResponseEntity<ScriptsDTO> updateScriptVersion(
-            @PathVariable Integer id,
-            @RequestParam String newVersion) 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.updateScriptVersion(id, newVersion));
-    }
-
-    @PostMapping("/scripts/{id}/breakdown")
-    public ResponseEntity<List<SceneBTO>> breakdownScript(
-            @PathVariable Integer id,
-            @Valid @RequestBody List<SceneBTO> sceneBTOs) 
-        throws MovieProductionException {
-        return new ResponseEntity<>(service.breakdownScripts(id, sceneBTOs), HttpStatus.CREATED);
-    }
-
-    // ======================= Call Sheet Endpoints =======================
-    @PostMapping("/call-sheets")
-    public ResponseEntity<CallSheetDTO> createCallSheet(@Valid @RequestBody CallSheetDTO callSheetDTO) 
-        throws MovieProductionException {
-        return new ResponseEntity<>(service.createdCallSheet(callSheetDTO), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/call-sheets/{id}")
-    public ResponseEntity<CallSheetDTO> updateCallSheet(
-            @PathVariable Long id,
-            @Valid @RequestBody CallSheetDTO callSheetDTO) 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.updatedAllSheet(id, callSheetDTO));
-    }
-
-    @GetMapping("/call-sheets")
-    public ResponseEntity<List<CallSheetDTO>> getAllCallSheets() 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.getAllCallSheets());
-    }
-
-    @GetMapping("/call-sheets/{id}")
-    public ResponseEntity<CallSheetDTO> getCallSheetById(@PathVariable Long id) 
-        throws MovieProductionException {
-        return ResponseEntity.ok(service.getCallSheetById(id));
-    }
-
-    @DeleteMapping("/call-sheets/{id}")
-    public ResponseEntity<Void> deleteCallSheet(@PathVariable Long id) 
-        throws MovieProductionException {
-        service.deleteCallSheet(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ======================= Exception Handling =======================
-    @ExceptionHandler(MovieProductionException.class)
-    public ResponseEntity<String> handleMovieProductionException(MovieProductionException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-    }
+// Define the Schedule interface as per your backend (simplified based on your image)
+interface Schedule {
+    movieId: string;
+    sceneNumber: number; // Corrected from `scenenumbers` based on common practice
+    date: string;
+    time: string;
+    location: string;
+    cast: string[]; // Backend often expects arrays
+    crew: string[]; // Backend often expects arrays
+    notes: string;
 }
+
+const ShootingSchedule = () => {
+    // State to hold all schedules (if you display a list)
+    const [schedules, setSchedules] = useState<Schedule[]>([]);
+
+    // State to hold the data for the new schedule item being added
+    const [newSchedule, setNewSchedule] = useState<Schedule>({
+        movieId: "",
+        sceneNumber: 0,
+        date: "",
+        time: "",
+        location: "",
+        cast: [], // Initialize as empty arrays
+        crew: [], // Initialize as empty arrays
+        notes: ""
+    });
+
+    // State for popup messages
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false); // To disable button during API call
+
+    // Handles changes in form inputs
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+
+        // Special handling for comma-separated strings to arrays
+        if (name === "cast" || name === "crew") {
+            setNewSchedule({
+                ...newSchedule,
+                [name]: value.split(',').map(item => item.trim()).filter(item => item !== '')
+            });
+        } else if (name === "sceneNumber" && value !== "") {
+            setNewSchedule({
+                ...newSchedule,
+                [name]: parseInt(value, 10) // Convert to number
+            });
+        }
+        else {
+            setNewSchedule({
+                ...newSchedule,
+                [name]: value
+            });
+        }
+        // Clear messages when user starts typing again
+        setSuccessMessage(null);
+        setErrorMessage(null);
+    };
+
+    // This is the function that needs modification
+    const handleAddSchedule = async (e: React.FormEvent) => {
+        e.preventDefault(); // Prevent default form submission behavior (page reload)
+
+        setLoading(true); // Start loading
+        setSuccessMessage(null); // Clear any previous messages
+        setErrorMessage(null);   // Clear any previous messages
+
+        try {
+            // Assuming your backend expects a specific projectId for the schedule item
+            // You'll need to decide how to get this projectId.
+            // For example, if it's passed as a prop, or retrieved from context/URL.
+            // Let's assume a dummy projectId for now, replace with your actual logic.
+            const dummyProjectId = 1; // <--- REPLACE WITH YOUR ACTUAL PROJECT ID LOGIC
+
+            // Send the newSchedule data to your backend API
+            // The createScheduleItem function should handle the actual HTTP POST request
+            const createdSchedule = await createScheduleItem(dummyProjectId, newSchedule);
+
+            // If the API call is successful:
+            setSchedules(prevSchedules => [...prevSchedules, createdSchedule]); // Add to local state
+            setSuccessMessage("Schedule added successfully!"); // Set success message
+
+            // Reset the form fields after successful submission
+            setNewSchedule({
+                movieId: "",
+                sceneNumber: 0,
+                date: "",
+                time: "",
+                location: "",
+                cast: [],
+                crew: [],
+                notes: ""
+            });
+
+            // Optional: Hide the success message after a few seconds
+            setTimeout(() => setSuccessMessage(null), 3000);
+
+        } catch (error: any) {
+            // If the API call fails:
+            setErrorMessage(error.message || "Failed to add schedule. Please check inputs and try again."); // Set error message
+            console.error("Error adding schedule:", error); // Log the full error for debugging
+        } finally {
+            setLoading(false); // End loading
+        }
+    };
+
+    return (
+        <div className="shooting-schedule-container">
+            <h2>Shooting Schedule</h2>
+
+            {/* Success and Error Message Display */}
+            {successMessage && <div className="message success">{successMessage}</div>}
+            {errorMessage && <div className="message error">{errorMessage}</div>}
+
+            <form onSubmit={handleAddSchedule}>
+                <div className="form-group">
+                    <label htmlFor="movieId">Movie Id</label>
+                    <input
+                        type="text"
+                        id="movieId"
+                        name="movieId"
+                        value={newSchedule.movieId}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="sceneNumber">Scene Number</label>
+                    <input
+                        type="number" // Use type="number" for sceneNumber
+                        id="sceneNumber"
+                        name="sceneNumber"
+                        value={newSchedule.sceneNumber === 0 ? '' : newSchedule.sceneNumber} // Display empty string if 0 for better UX
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="date">Date</label>
+                    <input
+                        type="date" // Use type="date" for date input
+                        id="date"
+                        name="date"
+                        value={newSchedule.date}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="time">Time</label>
+                    <input
+                        type="time" // Use type="time" for time input
+                        id="time"
+                        name="time"
+                        value={newSchedule.time}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="location">Location</label>
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={newSchedule.location}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="cast">Cast (comma separated)</label>
+                    <input
+                        type="text"
+                        id="cast"
+                        name="cast"
+                        value={newSchedule.cast.join(', ')} // Display as comma-separated string
+                        onChange={handleChange}
+                        className="form-control"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="crew">Crew (comma separated)</label>
+                    <input
+                        type="text"
+                        id="crew"
+                        name="crew"
+                        value={newSchedule.crew.join(', ')} // Display as comma-separated string
+                        onChange={handleChange}
+                        className="form-control"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="notes">Notes</label>
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        value={newSchedule.notes}
+                        onChange={handleChange}
+                        className="form-control"
+                    />
+                </div>
+
+                <button type="submit" className="add-schedule-button" disabled={loading}>
+                    {loading ? 'Adding Schedule...' : 'Add Schedule'}
+                </button>
+            </form>
+
+            {/* You can display the list of schedules here if needed */}
+            {/* <div>
+                <h3>Existing Schedules</h3>
+                {schedules.length === 0 ? (
+                    <p>No schedules added yet.</p>
+                ) : (
+                    <ul>
+                        {schedules.map((s, index) => (
+                            <li key={index}>
+                                {s.movieId} - Scene {s.sceneNumber} on {s.date} at {s.time} ({s.location})
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div> */}
+        </div>
+    );
+};
+
+export default ShootingSchedule;
