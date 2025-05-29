@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 // import { createResource } from '../api/resource'; // Uncomment when ready to connect to backend
 
 interface Resource {
-    // 'name' is now a dropdown with specific options
-    name: 'Red Dress' | 'Wooden Staff' | 'Arri Camera' | 'Boom Mic' | 'Tripod' | 'Catering Van' | 'Actor Trailer' | 'Lunch for 50' | 'Sound Mixer' | 'Lighting Kit' | 'Clapperboard' | 'Makeup Kit';
-    type: 'Personnel' | 'Equipment' | 'Location' | 'Wardrobe' | 'Props' | 'Set Decoration' | 'Vehicles' | 'Catering' | 'Supplies' | 'Miscellaneous';
+    name: 'Red Dress' | 'Wooden Staff' | 'Arri Camera' | 'Boom Mic' | 'Tripod' | 'Catering Van' | 'Actor Trailer' | 'Lunch for 50' | 'Sound Mixer' | 'Lighting Kit' | 'Clapperboard' | 'Makeup Kit' | ''; // Added empty string for default
+    type: 'Personnel' | 'Equipment' | 'Location' | 'Wardrobe' | 'Props' | 'Set Decoration' | 'Vehicles' | 'Catering' | 'Supplies' | 'Miscellaneous' | ''; // Added empty string for default
     availability: 'Available' | 'Unavailable' | 'In Use' | 'Maintenance' | 'Booked' | 'Needs Repair';
     // id?: number;
 }
@@ -12,9 +11,9 @@ interface Resource {
 const ResourceManagement: React.FC = () => {
     const [resources, setResources] = useState<Resource[]>([]);
     const [newResource, setNewResource] = useState<Resource>({
-        name: "Arri Camera", // Default name option
-        type: "Equipment",
-        availability: "Available"
+        name: "", // Initial state is empty string for the placeholder
+        type: "", // Initial state is empty string for the placeholder
+        availability: "Available" // Still defaults to 'Available' or you can make this empty too
     });
 
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -42,8 +41,7 @@ const ResourceManagement: React.FC = () => {
         'Needs Repair'
     ];
 
-    // New: Options for the Resource Name dropdown
-    const resourceNameOptions: Resource['name'][] = [
+    const resourceNameOptions: Resource['name'][] = [ // Added empty string to the type for options
         'Red Dress',
         'Wooden Staff',
         'Arri Camera',
@@ -56,13 +54,11 @@ const ResourceManagement: React.FC = () => {
         'Lighting Kit',
         'Clapperboard',
         'Makeup Kit'
-        // Add more specific resource names here as needed
     ];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
-        // Type assertion for 'name', 'type', and 'availability' fields
         if (name === "name") {
             setNewResource({
                 ...newResource,
@@ -83,7 +79,7 @@ const ResourceManagement: React.FC = () => {
     };
 
     const handleAddResource = async () => {
-        // Validation now checks for selected options (which are always non-empty if required)
+        // Validation needs to check for empty strings from the default option
         if (!newResource.name || !newResource.type || !newResource.availability) {
             setMessage({ type: 'error', text: 'Please select all fields.' });
             return;
@@ -100,10 +96,11 @@ const ResourceManagement: React.FC = () => {
             setResources(prevResources => [...prevResources, resourceToAdd]);
             setMessage({ type: 'success', text: 'Resource added successfully!' });
 
+            // Reset the form to show default placeholder
             setNewResource({
-                name: resourceNameOptions[0], // Reset to first option or a meaningful default
-                type: "Equipment",
-                availability: "Available"
+                name: "", // Reset to empty string
+                type: "", // Reset to empty string
+                availability: "Available" // You can change this to "" if you want availability to also reset to a placeholder
             });
 
             setTimeout(() => setMessage(null), 3000);
@@ -126,7 +123,6 @@ const ResourceManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* MODIFIED: Resource Name as a dropdown */}
             <div className="form-group">
                 <label htmlFor="resourceName">Resource Name:</label>
                 <select
@@ -137,7 +133,8 @@ const ResourceManagement: React.FC = () => {
                     className="form-control"
                     required
                 >
-                    <option value="" disabled>-- Select a resource name --</option> {/* Optional: A disabled default */}
+                    {/* Default placeholder option */}
+                    <option value="" disabled hidden>-- Select a resource name --</option>
                     {resourceNameOptions.map(option => (
                         <option key={option} value={option}>
                             {option}
@@ -156,7 +153,8 @@ const ResourceManagement: React.FC = () => {
                     className="form-control"
                     required
                 >
-                    <option value="" disabled>-- Select a category --</option>
+                    {/* Default placeholder option */}
+                    <option value="" disabled hidden>-- Select a category --</option>
                     {resourceTypes.map(typeOption => (
                         <option key={typeOption} value={typeOption}>
                             {typeOption}
@@ -175,7 +173,8 @@ const ResourceManagement: React.FC = () => {
                     className="form-control"
                     required
                 >
-                    {/* <option value="" disabled>-- Select status --</option> */}
+                    {/* You can add a disabled hidden option here too if you don't want a default "Available" */}
+                    {/* <option value="" disabled hidden>-- Select status --</option> */}
                     {availabilityOptions.map(option => (
                         <option key={option} value={option}>
                             {option}
