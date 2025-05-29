@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-// You'll likely need an API service to actually add resources to the backend
-// import { createResource } from '../api/resource'; // Assuming you have this
+// Assuming createResource exists in your api/resource.ts or similar file
+// import { createResource } from '../api/resource'; // Uncomment when ready to connect to backend
 
 interface Resource {
-    name: string;
-    type: 'Cast' | 'Crew' | 'Equipment' | 'Location' | 'Costumes' | 'Props' | 'Set Property' | 'Food' | 'Caravan'; // Added new types
+    name: string; // This will now hold specific items like "Red Dress", "Wooden Staff", "Catering Van"
+    type: 'Personnel' | 'Equipment' | 'Location' | 'Wardrobe' | 'Props' | 'Set Decoration' | 'Vehicles' | 'Catering' | 'Supplies' | 'Miscellaneous'; // Broader categories for the dropdown
     availability: string;
+    // id?: number; // Optional: if your backend assigns an ID
 }
 
 const ResourceManagement: React.FC = () => {
@@ -15,25 +16,26 @@ const ResourceManagement: React.FC = () => {
     // State for the new resource being added via the form
     const [newResource, setNewResource] = useState<Resource>({
         name: "",
-        type: "Cast", // Default type
+        type: "Equipment", // Default broad category
         availability: ""
     });
 
     // State for messages (success/error)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [loading, setLoading] = useState(false); // For disabling button during API call
+    const [loading, setLoading] = useState(false); // To disable button during API call
 
-    // Options for the dropdown menu
+    // Options for the dropdown menu (broader categories)
     const resourceTypes = [
-        'Cast',
-        'Crew',
-        'Equipment',
-        'Location',
-        'Costumes',
-        'Props',
-        'Set Property',
-        'Food',
-        'Caravan'
+        'Personnel',       // For Cast, Crew, etc.
+        'Equipment',       // For Cameras, Lights, Sound Gear, etc.
+        'Location',        // For specific shooting locations
+        'Wardrobe',        // For Costumes, clothing items
+        'Props',           // For specific props
+        'Set Decoration',  // For furniture, decor, etc.
+        'Vehicles',        // For Cars, Trucks, Caravans, etc.
+        'Catering',        // For Food, drinks
+        'Supplies',        // For office supplies, cleaning supplies, etc.
+        'Miscellaneous'    // For anything else
     ];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -47,7 +49,7 @@ const ResourceManagement: React.FC = () => {
 
     const handleAddResource = async () => {
         // Basic validation
-        if (!newResource.name || !newResource.type || !newResource.availability) {
+        if (!newResource.name.trim() || !newResource.type || !newResource.availability.trim()) {
             setMessage({ type: 'error', text: 'Please fill all fields.' });
             return;
         }
@@ -57,18 +59,19 @@ const ResourceManagement: React.FC = () => {
 
         try {
             // In a real application, you would send this to your backend API
-            // For now, we'll simulate an API call and add to local state
-            // const createdResource = await createResource(newResource); // Example API call
+            // Example:
+            // const createdResource = await createResource(newResource);
+            // setResources(prevResources => [...prevResources, createdResource]);
 
-            const resourceToAdd = { ...newResource }; // Create a copy to potentially add to local state
-
-            setResources(prevResources => [...prevResources, resourceToAdd]); // Add to local state (simulated)
+            // For now, simulating adding to local state:
+            const resourceToAdd: Resource = { ...newResource, name: newResource.name.trim(), availability: newResource.availability.trim() };
+            setResources(prevResources => [...prevResources, resourceToAdd]);
             setMessage({ type: 'success', text: 'Resource added successfully!' });
 
             // Reset the form
             setNewResource({
                 name: "",
-                type: "Cast", // Reset to default type
+                type: "Equipment", // Reset to default type
                 availability: ""
             });
 
@@ -96,28 +99,30 @@ const ResourceManagement: React.FC = () => {
             )}
 
             <div className="form-group">
-                <label htmlFor="resourceName">Name:</label>
+                <label htmlFor="resourceName">Resource Name/Description:</label>
                 <input
                     type="text"
                     id="resourceName"
                     name="name"
-                    placeholder="Resource Name"
+                    placeholder="e.g., Red Dress for Lead, Wooden Staff, Catering Van"
                     value={newResource.name}
                     onChange={handleInputChange}
                     className="form-control"
+                    required // Added required attribute
                 />
             </div>
 
             <div className="form-group">
-                <label htmlFor="resourceType">Type:</label>
+                <label htmlFor="resourceType">Resource Type/Category:</label>
                 <select
                     id="resourceType"
                     name="type"
                     value={newResource.type}
                     onChange={handleInputChange}
                     className="form-control"
+                    required // Added required attribute
                 >
-                    <option value="" disabled>-- Select one option --</option>
+                    <option value="" disabled>-- Select a category --</option>
                     {resourceTypes.map(typeOption => (
                         <option key={typeOption} value={typeOption}>
                             {typeOption}
@@ -132,10 +137,11 @@ const ResourceManagement: React.FC = () => {
                     type="text"
                     id="resourceAvailability"
                     name="availability"
-                    placeholder="Availability"
+                    placeholder="e.g., Available 24/7, M-F 9am-5pm, Needs Repair"
                     value={newResource.availability}
                     onChange={handleInputChange}
                     className="form-control"
+                    required // Added required attribute
                 />
             </div>
 
@@ -152,7 +158,7 @@ const ResourceManagement: React.FC = () => {
                     <ul>
                         {resources.map((resource, index) => (
                             <li key={index}>
-                                <strong>{resource.name}</strong> ({resource.type}) - Available: {resource.availability}
+                                <strong>{resource.name}</strong> (Type: {resource.type}) - Availability: {resource.availability}
                             </li>
                         ))}
                     </ul>
