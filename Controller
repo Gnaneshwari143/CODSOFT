@@ -1,28 +1,7 @@
-// src/api/resource.ts
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080/api'; // <== IMPORTANT: VERIFY THIS URL
-
-// (Include the Resource interface from src/interfaces/Resource.ts)
-// You might also need ResourcePayload and ResourceResponse interfaces here
-// if they differ from the main Resource interface, especially for 'id'.
-
-export const createResource = async (resourceData: Omit<Resource, 'id'>): Promise<Resource> => {
-    try {
-        const response = await axios.post<Resource>(`${API_BASE_URL}/resources`, resourceData);
-        return response.data;
-    } catch (error) {
-        // ... error handling
-        throw error;
-    }
-};
-
-export const fetchResources = async (): Promise<Resource[]> => {
-    try {
-        const response = await axios.get<Resource[]>(`${API_BASE_URL}/resources`);
-        return response.data;
-    } catch (error) {
-        // ... error handling
-        throw error;
-    }
-};
+// src/interfaces/Resource.ts
+export interface Resource {
+    name: 'Red Dress' | 'Wooden Staff' | 'Arri Camera' | 'Boom Mic' | 'Tripod' | 'Catering Van' | 'Actor Trailer' | 'Lunch for 50' | 'Sound Mixer' | 'Lighting Kit' | 'Clapperboard' | 'Makeup Kit' | ''; // Added ''
+    type: 'Personnel' | 'Equipment' | 'Location' | 'Wardrobe' | 'Props' | 'Set Decoration' | 'Vehicles' | 'Catering' | 'Supplies' | 'Miscellaneous' | ''; // Added ''
+    availability: 'Available' | 'Unavailable' | 'In Use' | 'Maintenance' | 'Booked' | 'Needs Repair';
+    id?: number; // Add this if your backend returns an ID
+}
