@@ -1,42 +1,467 @@
-import React, { useState } from 'react';
-import './CallSheet.css';
+{
+  "name": "@local/redux-lib",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.9.5",
+    "redux": "^4.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
 
-const CallSheet: React.FC = () => {
-  const [callSheetData, setCallSheetData] = useState({
-    date: '',
-    location: '',
-    callTime: '',
-    scenes: '',
-    cast: '',
-    crew: '',
-    notes: '',
-  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setCallSheetData({ ...callSheetData, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Call Sheet Generated:", callSheetData);
-    alert("Call Sheet Generated!");
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "CommonJS",
+    "declaration": true,
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
+
+
+
+
+
+export interface Product {
+  code: string;
+  name: string;
+  description?: string;
+  price: number;
+}
+
+export interface CartItem {
+  productCode: string;
+  productName: string;
+  description?: string;
+  qty: number;
+  pricePerUnit: number;
+  linePrice: number; // qty * pricePerUnit
+}
+
+
+
+
+
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { CartItem, Product } from './types';
+
+interface CartState {
+  items: Record<string, CartItem>;
+}
+
+const initialState: CartState = { items: {} };
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState,
+  reducers: {
+    addProductToCart(state, action: PayloadAction<Product>) {
+      const p = action.payload;
+      const key = p.code;
+      if (state.items[key]) {
+        // increment
+        const item = state.items[key];
+        item.qty += 1;
+        item.linePrice = Math.round(item.qty * item.pricePerUnit * 100) / 100;
+      } else {
+        state.items[key] = {
+          productCode: p.code,
+          productName: p.name,
+          description: p.description,
+          qty: 1,
+          pricePerUnit: p.price,
+          linePrice: Math.round(1 * p.price * 100) / 100
+        };
+      }
+    },
+    incrementQty(state, action: PayloadAction<{ productCode: string }>) {
+      const key = action.payload.productCode;
+      const item = state.items[key];
+      if (item) {
+        item.qty += 1;
+        item.linePrice = Math.round(item.qty * item.pricePerUnit * 100) / 100;
+      }
+    },
+    decrementQty(state, action: PayloadAction<{ productCode: string }>) {
+      const key = action.payload.productCode;
+      const item = state.items[key];
+      if (item) {
+        item.qty -= 1;
+        if (item.qty <= 0) {
+          delete state.items[key];
+        } else {
+          item.linePrice = Math.round(item.qty * item.pricePerUnit * 100) / 100;
+        }
+      }
+    },
+    setQty(state, action: PayloadAction<{ productCode: string; qty: number }>) {
+      const { productCode, qty } = action.payload;
+      const item = state.items[productCode];
+      if (!item) return;
+      if (qty <= 0) {
+        delete state.items[productCode];
+      } else {
+        item.qty = Math.floor(qty);
+        item.linePrice = Math.round(item.qty * item.pricePerUnit * 100) / 100;
+      }
+    },
+    removeItem(state, action: PayloadAction<{ productCode: string }>) {
+      delete state.items[action.payload.productCode];
+    },
+    clearCart(state) {
+      state.items = {};
+    }
+  }
+});
+
+export const {
+  addProductToCart,
+  incrementQty,
+  decrementQty,
+  setQty,
+  removeItem,
+  clearCart
+} = cartSlice.actions;
+
+export default cartSlice.reducer;
+
+
+
+import { configureStore } from '@reduxjs/toolkit';
+import cartReducer from './cartSlice';
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer
+  }
+});
+
+// Types for consumers
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+
+
+
+export * from './types';
+export * from './store';
+export {
+  addProductToCart,
+  incrementQty,
+  decrementQty,
+  setQty,
+  removeItem,
+  clearCart
+} from './cartSlice';
+
+
+
+{
+  "name": "shopping-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-redux": "^8.0.5",
+    "@local/redux-lib": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.7"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  }
+}
+
+
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom","dom.iterable","esnext"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
+
+
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import './styles.css';
+
+// import store from library
+import { Provider } from 'react-redux';
+import { store } from '@local/redux-lib';
+
+const container = document.getElementById('root')!;
+const root = createRoot(container);
+
+root.render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </React.StrictMode>
+);
+
+
+
+import React, { useEffect, useState } from 'react';
+import ProductList from './components/ProductList';
+import CartPane from './components/CartPane';
+import { Product } from '@local/redux-lib';
+
+const sampleProducts: Product[] = [
+  { code: 'P001', name: 'Bluetooth Headphones', description: 'Wireless over-ear', price: 120 },
+  { code: 'P002', name: 'USB-C Charger', description: '30W fast charger', price: 25 },
+  { code: 'P003', name: 'Mechanical Keyboard', description: 'RGB TKL', price: 85 },
+  { code: 'P004', name: 'Wireless Mouse', description: 'Ergonomic', price: 35 },
+  { code: 'P005', name: 'External SSD 1TB', description: 'Portable SSD', price: 150 }
+];
+
+export default function App() {
+  // In a real app you'd fetch products from backend. For assignment, use local sample list.
+  const [products] = useState<Product[]>(sampleProducts);
+
+  return (
+    <div className="app-container">
+      <div className="left-nav">
+        <h2>Products</h2>
+        <ProductList products={products} />
+      </div>
+      <div className="right-pane">
+        <h2>Cart</h2>
+        <CartPane />
+      </div>
+    </div>
+  );
+}
+
+
+
+body { font-family: Arial, sans-serif; margin:0; padding:0; }
+.app-container { display: flex; height: 100vh; }
+.left-nav { width: 36%; background: #f5f5f7; padding: 20px; box-sizing: border-box; overflow:auto; border-right: 1px solid #ddd;}
+.right-pane { flex:1; padding: 20px; box-sizing: border-box; overflow:auto; display:flex; flex-direction:column; }
+.product-item { padding: 10px; border-bottom: 1px solid #e0e0e0; cursor: pointer; display:flex; justify-content:space-between; align-items:center; }
+.product-item:hover { background: #fff; box-shadow: 0 0 6px rgba(0,0,0,0.02); }
+.cart-items { flex:1; overflow:auto; }
+.cart-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; display:flex; justify-content:space-between; align-items:center; }
+.qty-controls { display:flex; align-items:center; gap:8px; }
+.qty-input { width:60px; text-align:center; }
+.button { padding:6px 10px; border-radius:6px; border:none; cursor:pointer; background:#4caf50; color:white; }
+.button.danger { background:#e53935; }
+.small-button { padding:4px 8px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; }
+.message { margin:10px 0; padding:8px; border-radius:6px; }
+.success { background:#e6f4ea; color:#1b5e20; border:1px solid #c8e6c9; }
+.error { background:#fdecea; color:#b71c1c; border:1px solid #ffcdd2; }
+.empty { color:#888; font-style:italic; }
+
+
+
+import React from 'react';
+import { Product, addProductToCart } from '@local/redux-lib';
+import { useDispatch } from 'react-redux';
+
+const ProductList: React.FC<{ products: Product[] }> = ({ products }) => {
+  const dispatch = useDispatch();
+
+  const onClickProduct = (p: Product) => {
+    // dispatch action from the library
+    dispatch(addProductToCart(p));
   };
 
   return (
-    <div className="call-sheet-container">
-      <h2 className="call-sheet-title">Generate Call Sheet</h2>
-      <form onSubmit={handleSubmit} className="call-sheet-form">
-        <input type="date" name="date" value={callSheetData.date} onChange={handleChange} placeholder="Date" required />
-        <input type="text" name="location" value={callSheetData.location} onChange={handleChange} placeholder="Location" required />
-        <input type="time" name="callTime" value={callSheetData.callTime} onChange={handleChange} placeholder="Call Time" required />
-        <textarea name="scenes" value={callSheetData.scenes} onChange={handleChange} placeholder="Scenes (e.g., Scene 5, Scene 6)" required />
-        <textarea name="cast" value={callSheetData.cast} onChange={handleChange} placeholder="Cast (e.g., Actor 1 - Role)" required />
-        <textarea name="crew" value={callSheetData.crew} onChange={handleChange} placeholder="Crew (e.g., Director, AD, Cameraman)" required />
-        <textarea name="notes" value={callSheetData.notes} onChange={handleChange} placeholder="Additional Notes" />
-        <button type="submit" className="generate-button">Generate & Save</button>
-      </form>
+    <div>
+      {products.map(p => (
+        <div key={p.code} className="product-item" onClick={() => onClickProduct(p)}>
+          <div>
+            <div style={{fontWeight:600}}>{p.code} — {p.name}</div>
+            <div style={{fontSize:12, color:'#555'}}>{p.description}</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontWeight:700}}>₹{p.price.toFixed(2)}</div>
+            <div style={{fontSize:12, color:'#888'}}>Click to add</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-export default CallSheet;
+export default ProductList;
+
+
+
+import React, { useMemo, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, clearCart, removeItem, setQty } from '@local/redux-lib';
+import CartItem from './CartItem';
+
+export default function CartPane() {
+  const itemsMap = useSelector((s: RootState) => s.cart.items);
+  const dispatch = useDispatch();
+  const [message, setMessage] = useState<{type:'success'|'error'; text:string} | null>(null);
+
+  const items = Object.values(itemsMap);
+
+  const total = useMemo(() => {
+    return items.reduce((acc, it) => acc + it.linePrice, 0);
+  }, [items]);
+
+  const onClear = () => {
+    dispatch(clearCart());
+    setMessage({ type: 'success', text: 'Cart cleared' });
+    setTimeout(()=>setMessage(null), 2000);
+  };
+
+  const onCheckout = async () => {
+    if (items.length === 0) {
+      setMessage({ type: 'error', text: 'Cart is empty' });
+      setTimeout(()=>setMessage(null), 2000);
+      return;
+    }
+    // Simulate save to server; replace URL with your backend endpoint
+    try {
+      const payload = {
+        username: 'demo_user',
+        totalPrice: total,
+        items: items.map(it => ({
+          productCode: it.productCode,
+          productName: it.productName,
+          qty: it.qty,
+          pricePerUnit: it.pricePerUnit,
+          linePrice: it.linePrice
+        }))
+      };
+
+      // Example POST - change URL if you have backend
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        // read body if available
+        const err = await res.json().catch(()=>({message:'Unknown error'}));
+        throw new Error(err.message || 'Failed to save cart');
+      }
+
+      // on success
+      dispatch(clearCart());
+      setMessage({ type: 'success', text: 'Checkout saved successfully' });
+      setTimeout(()=>setMessage(null), 2000);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: `Save failed: ${err.message}` });
+      setTimeout(()=>setMessage(null), 3000);
+    }
+  };
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', height:'100%'}}>
+      <div className="cart-items">
+        {message && <div className={`message ${message.type === 'success' ? 'success' : 'error'}`}>{message.text}</div>}
+        {items.length === 0 ? (
+          <div className="empty">Cart is empty. Click a product to add it.</div>
+        ) : (
+          items.map(it => (
+            <CartItem key={it.productCode} item={it}
+              onRemove={() => dispatch(removeItem({ productCode: it.productCode }))}
+              onSetQty={(qty:number) => dispatch(setQty({ productCode: it.productCode, qty }))}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="cart-footer">
+        <div>
+          <button className="button danger" onClick={onClear}>Clear Cart</button>
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:14}}>Total:</div>
+          <div style={{fontWeight:700, fontSize:20}}>₹{total.toFixed(2)}</div>
+          <div style={{marginTop:8}}>
+            <button className="button" onClick={onCheckout}>Checkout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import { CartItem as CI } from '@local/redux-lib';
+
+export default function CartItem({
+  item,
+  onRemove,
+  onSetQty
+}: {
+  item: CI;
+  onRemove: () => void;
+  onSetQty: (qty: number) => void;
+}) {
+  const [localQty, setLocalQty] = useState<number>(item.qty);
+
+  useEffect(()=> { setLocalQty(item.qty); }, [item.qty]);
+
+  const applyQty = (raw: number) => {
+    const q = Math.max(0, Math.floor(isNaN(raw) ? 0 : raw));
+    setLocalQty(q);
+    // if 0 -> remove from cart (as per requirement)
+    onSetQty(q);
+  };
+
+  return (
+    <div style={{padding:10, borderBottom:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:600}}>{item.productCode} — {item.productName}</div>
+        <div style={{fontSize:12, color:'#555'}}>{item.description}</div>
+        <div style={{fontSize:13, marginTop:6}}>Unit: ₹{item.pricePerUnit.toFixed(2)} &nbsp; | &nbsp; Line: ₹{item.linePrice.toFixed(2)}</div>
+      </div>
+
+      <div style={{display:'flex', alignItems:'center', gap:8}}>
+        <div className="qty-controls">
+          <button className="small-button" onClick={()=> applyQty(localQty-1)}>-</button>
+          <input className="qty-input" type="number" value={localQty} onChange={e => setLocalQty(Number(e.target.value))} onBlur={() => applyQty(localQty)} />
+          <button className="small-button" onClick={()=> applyQty(localQty+1)}>+</button>
+        </div>
+        <div>
+          <button className="small-button" onClick={onRemove}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
